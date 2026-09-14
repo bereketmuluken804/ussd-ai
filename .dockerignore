@@ -1,0 +1,26 @@
+# Dependencies & Build output
+node_modules
+dist
+.npm
+
+# Git & IDE files
+.git
+.gitignore
+.vscode
+.idea
+
+# Environment files & Secrets
+.env
+.env.*
+*.pem
+
+# Logs & Debugging
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs
+
+# Docker & CI files
+Dockerfile
+.dockerignore
+.github
