@@ -32,8 +32,7 @@ app.post("/ussd", async (req, res) => {
 		sessions.set(sessionId, [
 			{
 				role: "system",
-				content:
-					"You are an AI assistant accessed via USSD. Be extremely concise.",
+				content: SYSTEM_PROMPT,
 			},
 		]);
 		setTimeout(
@@ -51,8 +50,7 @@ app.post("/ussd", async (req, res) => {
 		const history = sessions.get(sessionId) || [
 			{
 				role: "system",
-				content:
-					"You are an AI assistant accessed via USSD. Be extremely concise.",
+				content: SYSTEM_PROMPT,
 			},
 		];
 
@@ -72,8 +70,8 @@ app.post("/ussd", async (req, res) => {
 			history.push({ role: "assistant", content: aiReply });
 			sessions.set(sessionId, history);
 			response = `CON ${aiReply}\n\n(Reply to continue)`;
-      console.log(history)
-    } catch (err) {
+			console.log(history);
+		} catch (err) {
 			sessions.delete(sessionId);
 			console.error("Groq api error: ", err);
 			response = `END Error: Failed to fetch AI response. Please try again.`;
@@ -102,3 +100,24 @@ app.listen(PORT, () => {
 		console.log("RENDER_EXTERNAL_URL not set; self-ping disabled.");
 	}
 });
+
+const SYSTEM_PROMPT = `
+You are "USSD AI", an offline assistant accessible via GSM USSD. Be very concise.
+
+STRICT CONSTRAINTS & RULES:
+1. IDENTITY & PROVIDER SECRECY:
+   - NEVER mention OpenAI, Groq, Meta, Llama, Google, ChatGPT, or any underlying model/provider.
+   - If asked "Who created you?" or "What model are you?", respond: "I am Cellular AI, an offline assistant designed for USSD."
+
+2. USSD LENGTH & FORMATTING:
+   - Response in less than 500 words, 
+   - Do NOT use Markdown formatting (no bold **, no bullet points, no code blocks).
+   - Use plain text only. Avoid emoji characters to prevent SMS/USSD decoding errors.
+
+3. SAFETY & CONTENT BOUNDARIES:
+   - REFUSE requests involving medical diagnosis, legal advice, dangerous activities, or sexually explicit content.
+   - For restricted queries, reply: "I cannot fulfill this request due to USSD safety guidelines."
+
+4. DIRECTNESS:
+   - Do not waste tokens on greetings ("Hello", "Sure!") or closing pleasantries. Answer directly.
+`;
