@@ -8,12 +8,12 @@ configDotenv();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const sessions = new Map();
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 app.use(requestLogger);
-
 
 const groq = new Groq({
 	apiKey: process.env.GROQ_API_KEY,
@@ -24,40 +24,57 @@ app.get("/health", (req, res) => {
 });
 
 app.post("/ussd", async (req, res) => {
-  logger.info('Processing USSD session turn', { text: req.body.text });
-	const { text } = req.body;
+	logger.info("Processing USSD session turn", { text: req.body.text });
+	const { sessionId, text } = req.body;
 
 	let response = "";
 	if (!text || text.trim() === "") {
-		response = `CON Welcome to USSD AI
-    Type your query/prompt below: `;
+		sessions.set(sessionId, [
+			{
+				role: "system",
+				content:
+					"You are an AI assistant accessed via USSD. Be extremely concise.",
+			},
+		]);
+		setTimeout(
+			() => {
+				if (sessions.has(sessionId)) {
+					sessions.delete(sessionId);
+				}
+			},
+			3 * 60 * 1000,
+		);
+		response = `CON Welcome to USSD AI\nType your question below: `;
 	} else {
 		const inputs = text.split("*");
 		const userPrompt = inputs[inputs.length - 1];
+		const history = sessions.get(sessionId) || [
+			{
+				role: "system",
+				content:
+					"You are an AI assistant accessed via USSD. Be extremely concise.",
+			},
+		];
+
+		history.push({ role: "user", content: userPrompt });
 
 		try {
 			const completion = await groq.chat.completions.create({
-				messages: [
-					{
-						role: "system",
-						content:
-							"You are an AI assistant accessed via USSD. Be extremely concise. Keep answers under 150 characters.",
-					},
-					{
-						role: "user",
-						content: userPrompt,
-					},
-				],
+				messages: history,
 				model: "openai/gpt-oss-20b",
-        reasoning_format: 'hidden', // Hides reasoning and forces direct output
+				reasoning_format: "hidden", // Hides reasoning and forces direct output
 			});
 
 			const aiReply =
 				completion.choices[0]?.message?.content ||
 				"No answer generated.";
-        console.log(completion.choices[0]?.message)
-			response = `END ${aiReply}`;
-		} catch (err) {
+
+			history.push({ role: "assistant", content: aiReply });
+			sessions.set(sessionId, history);
+			response = `CON ${aiReply}\n\n(Reply to continue)`;
+      console.log(history)
+    } catch (err) {
+			sessions.delete(sessionId);
 			console.error("Groq api error: ", err);
 			response = `END Error: Failed to fetch AI response. Please try again.`;
 		}
