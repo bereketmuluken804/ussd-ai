@@ -2,7 +2,7 @@
 
 Talk to an LLM from any phone — no app, no data, no smartphone required. Just dial and type.
 
-## What it is / why it exists
+## Why bother?
 
 Most "AI access" assumes you've got a smartphone, a data plan, and decent coverage. A huge chunk of Africa's mobile users have none of the above — just a GSM connection and USSD, the same protocol that powers mobile money and airtime top-up menus. This project rides that same rail: dial a shortcode, type a question, get an answer back on your screen. No internet required, because USSD never touches the internet — it's signaling over the cellular network itself.
 
